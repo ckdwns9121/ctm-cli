@@ -74,7 +74,7 @@ const COMMANDS: CommandDef[] = [
     name: "clean",
     usage: "ctm clean [key]",
     description:
-      "Jira 이슈에 연결된 로컈 브런치를 삭제합니다.\n  원격 브런치도 함께 삭제할지 묻어봅니다.\n  worktree가 있으면 함께 정리할지 묻어뽅니다.",
+      "Jira 이슈에 연결된 로컬 브랜치를 삭제합니다.\n  원격 브랜치도 함께 삭제할지 물어봅니다.\n  worktree가 있으면 함께 정리할지 물어봅니다.",
     examples: [
       { cmd: "ctm clean", comment: "현재 브런치 삭제" },
       { cmd: "ctm clean CGKR-1423", comment: "특정 이슈 브런치 삭제" },
