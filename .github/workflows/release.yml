@@ -89,49 +89,38 @@ jobs:
           fi
 
           git clone "https://x-access-token:${TOKEN}@github.com/${OWNER}/homebrew-ctm.git" /tmp/tap
+          mkdir -p /tmp/tap/Formula
+          VERSION_NUM="${VERSION#v}"
 
-          python3 - << 'EOF'
-          import os
-
-          version  = os.environ['VERSION'].lstrip('v')
-          arm64    = os.environ['SHA256_ARM64']
-          x64      = os.environ['SHA256_X64']
-          repo     = os.environ['REPO']
-
-          formula = f"""\
-class Ctm < Formula
-  desc "Colo Ticket Manager — Jira-driven branch management CLI"
-  homepage "https://github.com/{repo}"
-  version "{version}"
-
-  on_macos do
-    if Hardware::CPU.arm?
-      url "https://github.com/{repo}/releases/download/v{version}/ctm-macos-arm64"
-      sha256 "{arm64}"
-    else
-      url "https://github.com/{repo}/releases/download/v{version}/ctm-macos-x64"
-      sha256 "{x64}"
-    end
-  end
-
-  def install
-    if Hardware::CPU.arm?
-      bin.install "ctm-macos-arm64" => "ctm"
-    else
-      bin.install "ctm-macos-x64" => "ctm"
-    end
-  end
-
-  test do
-    system "\#{bin}/ctm", "--version"
-  end
-end
-"""
-
-          os.makedirs("/tmp/tap/Formula", exist_ok=True)
-          with open("/tmp/tap/Formula/ctm.rb", "w") as f:
-              f.write(formula)
-          EOF
+          {
+            echo 'class Ctm < Formula'
+            echo '  desc "Colo Ticket Manager — Jira-driven branch management CLI"'
+            echo "  homepage \"https://github.com/${REPO}\""
+            echo "  version \"${VERSION_NUM}\""
+            echo ''
+            echo '  on_macos do'
+            echo '    if Hardware::CPU.arm?'
+            echo "      url \"https://github.com/${REPO}/releases/download/${VERSION}/ctm-macos-arm64\""
+            echo "      sha256 \"${SHA256_ARM64}\""
+            echo '    else'
+            echo "      url \"https://github.com/${REPO}/releases/download/${VERSION}/ctm-macos-x64\""
+            echo "      sha256 \"${SHA256_X64}\""
+            echo '    end'
+            echo '  end'
+            echo ''
+            echo '  def install'
+            echo '    if Hardware::CPU.arm?'
+            echo '      bin.install "ctm-macos-arm64" => "ctm"'
+            echo '    else'
+            echo '      bin.install "ctm-macos-x64" => "ctm"'
+            echo '    end'
+            echo '  end'
+            echo ''
+            echo '  test do'
+            echo '    system "#{bin}/ctm", "--version"'
+            echo '  end'
+            echo 'end'
+          } > /tmp/tap/Formula/ctm.rb
 
           cd /tmp/tap
           git config user.email "github-actions@github.com"
