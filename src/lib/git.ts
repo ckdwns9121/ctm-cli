@@ -1,5 +1,7 @@
 import simpleGit from "simple-git";
 import { execa } from "execa";
+import { basename, dirname, join } from "node:path";
+import type { WorktreeEntry } from "../types/index.js";
 
 export function getGit(cwd = process.cwd()) {
   return simpleGit(cwd);
@@ -90,4 +92,83 @@ export async function createPR(title: string, body: string): Promise<string> {
   // gh outputs the PR URL as the last line
   const lines = result.stdout.trim().split("\n");
   return lines[lines.length - 1];
+}
+
+// ── Worktree helpers ──────────────────────────────────────────────────────
+
+/**
+ * Computes the sibling-directory path for a worktree.
+ * e.g. repo=/Users/dev/my-app, branch=feat/CGKR-1423
+ *   → /Users/dev/my-app--feat-CGKR-1423
+ */
+export function getWorktreePath(repoRoot: string, branchName: string): string {
+  const repoName = basename(repoRoot);
+  const safeBranch = branchName.replace(/\//g, "-");
+  return join(dirname(repoRoot), `${repoName}--${safeBranch}`);
+}
+
+/**
+ * `git worktree add -b <branch> <path> origin/<base>`
+ * Falls back to checking out an existing local branch if it already exists.
+ */
+export async function addWorktree(
+  worktreePath: string,
+  branchName: string,
+  baseBranch: string,
+): Promise<void> {
+  const git = getGit();
+  await git.fetch(["--prune"]);
+
+  const local = await git.branchLocal();
+  if (local.all.includes(branchName)) {
+    // Branch already exists — just attach a new worktree to it
+    await git.raw(["worktree", "add", worktreePath, branchName]);
+  } else {
+    await git.raw(["worktree", "add", "-b", branchName, worktreePath, `origin/${baseBranch}`]);
+  }
+}
+
+/**
+ * Parses `git worktree list --porcelain` into structured entries.
+ */
+export async function listWorktrees(): Promise<WorktreeEntry[]> {
+  const git = getGit();
+  const raw = await git.raw(["worktree", "list", "--porcelain"]);
+
+  const entries: WorktreeEntry[] = [];
+  let current: Partial<WorktreeEntry> = {};
+
+  for (const line of raw.split("\n")) {
+    if (line.startsWith("worktree ")) {
+      if (current.path) entries.push(current as WorktreeEntry);
+      current = { path: line.slice(9), isMain: entries.length === 0 };
+    } else if (line.startsWith("HEAD ")) {
+      current.head = line.slice(5);
+    } else if (line.startsWith("branch ")) {
+      current.branch = line.slice(7); // e.g. refs/heads/feat/CGKR-1423
+    } else if (line === "detached") {
+      current.branch = "detached";
+    }
+  }
+  if (current.path) entries.push(current as WorktreeEntry);
+
+  return entries;
+}
+
+/**
+ * `git worktree remove [--force] <path>` then prunes stale metadata.
+ */
+export async function removeWorktree(worktreePath: string, force = false): Promise<void> {
+  const git = getGit();
+  const args = ["worktree", "remove", ...(force ? ["--force"] : []), worktreePath];
+  await git.raw(args);
+  await git.raw(["worktree", "prune"]);
+}
+
+/**
+ * Returns the worktree entry whose branch matches the given branch name, if any.
+ */
+export async function findWorktreeForBranch(branchName: string): Promise<WorktreeEntry | undefined> {
+  const trees = await listWorktrees();
+  return trees.find((t) => t.branch === `refs/heads/${branchName}`);
 }

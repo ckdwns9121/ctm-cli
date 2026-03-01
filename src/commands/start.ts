@@ -14,9 +14,17 @@ import {
   createAndCheckout,
   hasUncommittedChanges,
   stashChanges,
+  getRepoRoot,
+  getWorktreePath,
+  addWorktree,
+  findWorktreeForBranch,
 } from "../lib/git.js";
 import { printIssue, printSuccess, printWarn } from "../lib/ui.js";
 import type { CtmIssue } from "../types/index.js";
+
+interface StartOptions {
+  worktree?: boolean;
+}
 
 async function pickIssueInteractively(
   config: ReturnType<typeof ensureConfig>,
@@ -45,7 +53,10 @@ async function pickIssueInteractively(
   return issues.find((i) => i.key === key)!;
 }
 
-export async function startCommand(keyArg: string | undefined): Promise<void> {
+export async function startCommand(
+  keyArg: string | undefined,
+  options: StartOptions,
+): Promise<void> {
   const config = ensureConfig();
   initJira({
     baseUrl: config.jiraBaseUrl,
@@ -89,7 +100,30 @@ export async function startCommand(keyArg: string | undefined): Promise<void> {
     },
   });
 
-  // ── Git state ──────────────────────────────────────────────────────────
+  // ── Worktree mode ──────────────────────────────────────────────────────
+  if (options.worktree) {
+    await runWorktreeMode(branchName, issue.key, config.baseBranch);
+  } else {
+    await runBranchMode(branchName, config.baseBranch);
+  }
+
+  // ── Update Jira status (공통) ──────────────────────────────────────────
+  try {
+    await updateIssueStatus(issue.key, "In Progress");
+    printSuccess(`Jira status → ${chalk.green("In Progress")}`);
+  } catch (err) {
+    printWarn(`Could not update Jira status: ${String(err)}`);
+  }
+
+  console.log();
+  console.log(`  Ticket: ${chalk.dim(issue.url)}`);
+  console.log();
+}
+
+// ── Branch mode (기존 동작) ────────────────────────────────────────────────
+
+async function runBranchMode(branchName: string, baseBranch: string): Promise<void> {
+  // Warn about uncommitted changes before switching
   const currentBranch = await getCurrentBranch();
   if (await hasUncommittedChanges()) {
     printWarn(`Uncommitted changes on "${currentBranch}".`);
@@ -103,26 +137,57 @@ export async function startCommand(keyArg: string | undefined): Promise<void> {
     }
   }
 
-  // ── Create & checkout branch ───────────────────────────────────────────
   const spinner = ora(`Creating branch ${chalk.cyan(branchName)}…`).start();
   try {
-    await createAndCheckout(branchName, config.baseBranch);
+    await createAndCheckout(branchName, baseBranch);
     spinner.succeed(`Switched to ${chalk.cyan(branchName)}`);
   } catch (err) {
     spinner.fail(`Failed to create branch: ${String(err)}`);
     process.exit(1);
   }
 
-  // ── Update Jira status ─────────────────────────────────────────────────
+  console.log();
+  console.log(`${chalk.green("✓")} Ready! Branch: ${chalk.cyan(branchName)}`);
+}
+
+// ── Worktree mode (신규) ───────────────────────────────────────────────────
+
+async function runWorktreeMode(
+  branchName: string,
+  issueKey: string,
+  baseBranch: string,
+): Promise<void> {
+  const repoRoot = await getRepoRoot();
+  const worktreePath = getWorktreePath(repoRoot, branchName);
+
+  // 이미 같은 브랜치용 worktree가 존재하면 안내 후 종료
+  const existing = await findWorktreeForBranch(branchName);
+  if (existing) {
+    printWarn(`Worktree already exists for "${branchName}"`);
+    console.log(`  ${chalk.cyan(existing.path)}`);
+    console.log();
+    console.log(`  ${chalk.dim("cd")} ${chalk.cyan(existing.path)}`);
+    console.log();
+    process.exit(0);
+  }
+
+  const spinner = ora(
+    `Creating worktree ${chalk.cyan(branchName)} at ${chalk.dim(worktreePath)}…`,
+  ).start();
   try {
-    await updateIssueStatus(issue.key, "In Progress");
-    printSuccess(`Jira status → ${chalk.green("In Progress")}`);
+    await addWorktree(worktreePath, branchName, baseBranch);
+    spinner.succeed(`Worktree created for ${chalk.cyan(branchName)}`);
   } catch (err) {
-    printWarn(`Could not update Jira status: ${String(err)}`);
+    spinner.fail(`Failed to create worktree: ${String(err)}`);
+    process.exit(1);
   }
 
   console.log();
-  console.log(`${chalk.green("✓")} Ready! Branch: ${chalk.cyan(branchName)}`);
-  console.log(`  Ticket: ${chalk.dim(issue.url)}`);
+  console.log(`${chalk.green("✓")} Ready!`);
+  console.log(`  ${chalk.bold("Worktree:")} ${chalk.cyan(worktreePath)}`);
+  console.log(`  ${chalk.bold("Branch:")}   ${chalk.cyan(branchName)}`);
   console.log();
+  console.log(`  ${chalk.dim("Move into the worktree:")}`);
+  console.log(`  ${chalk.cyan(`cd ${worktreePath}`)}`);
+  void issueKey; // referenced above via printIssue/Jira update
 }
