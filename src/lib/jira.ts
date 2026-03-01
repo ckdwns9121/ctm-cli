@@ -154,7 +154,8 @@ export async function getMyIssues(
   if (opts.statusFilter) {
     parts.push(`status = "${opts.statusFilter}"`);
   } else {
-    parts.push(`status not in (Done, Closed, Resolved)`);
+    // statusCategory = Done covers all "done" statuses regardless of language/name
+    parts.push(`statusCategory != Done`);
   }
   const jql = `${parts.join(" AND ")} ORDER BY updated DESC`;
 
