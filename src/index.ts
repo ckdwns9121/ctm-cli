@@ -5,6 +5,7 @@ import { startCommand } from "./commands/start.js";
 import { doneCommand } from "./commands/done.js";
 import { statusCommand } from "./commands/status.js";
 import { cleanCommand } from "./commands/clean.js";
+import { helpCommand } from "./commands/help.js";
 
 const program = new Command();
 
@@ -47,6 +48,11 @@ program
   .command("clean [key]")
   .description("Delete local (and optionally remote) branch for a Jira issue")
   .action(cleanCommand);
+
+program
+  .command("help [command]")
+  .description("명령어 도움말 출력")
+  .action(helpCommand);
 
 program.parseAsync().catch((err: unknown) => {
   if (err instanceof Error && err.name === "ExitPromptError") {
