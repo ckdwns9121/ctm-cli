@@ -1,0 +1,116 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build & Release
+    runs-on: macos-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Bun
+        uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: latest
+
+      - name: Install dependencies
+        run: bun install
+
+      - name: Build macOS binaries
+        run: |
+          mkdir -p dist/release
+          bun build --compile --target=bun-macos-arm64 --minify src/index.ts \
+            --outfile dist/release/ctm-macos-arm64
+          bun build --compile --target=bun-macos-x64 --minify src/index.ts \
+            --outfile dist/release/ctm-macos-x64
+          chmod +x dist/release/ctm-macos-arm64
+          chmod +x dist/release/ctm-macos-x64
+
+      - name: Compute SHA256
+        id: sha
+        run: |
+          echo "arm64=$(shasum -a 256 dist/release/ctm-macos-arm64 | awk '{print $1}')" >> "$GITHUB_OUTPUT"
+          echo "x64=$(shasum -a 256 dist/release/ctm-macos-x64 | awk '{print $1}')" >> "$GITHUB_OUTPUT"
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/release/ctm-macos-arm64
+            dist/release/ctm-macos-x64
+          generate_release_notes: true
+
+      - name: Update Homebrew tap
+        env:
+          TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
+          VERSION: ${{ github.ref_name }}
+          SHA256_ARM64: ${{ steps.sha.outputs.arm64 }}
+          SHA256_X64: ${{ steps.sha.outputs.x64 }}
+          REPO: ${{ github.repository }}
+          OWNER: ${{ github.repository_owner }}
+        run: |
+          if [ -z "$TOKEN" ]; then
+            echo "HOMEBREW_TAP_TOKEN not set — skipping tap update"
+            exit 0
+          fi
+
+          git clone "https://x-access-token:${TOKEN}@github.com/${OWNER}/homebrew-ctm.git" /tmp/tap
+
+          python3 - << 'EOF'
+          import os
+
+          version  = os.environ['VERSION'].lstrip('v')
+          arm64    = os.environ['SHA256_ARM64']
+          x64      = os.environ['SHA256_X64']
+          repo     = os.environ['REPO']
+
+          formula = f"""\
+class Ctm < Formula
+  desc "Colo Ticket Manager — Jira-driven branch management CLI"
+  homepage "https://github.com/{repo}"
+  version "{version}"
+
+  on_macos do
+    if Hardware::CPU.arm?
+      url "https://github.com/{repo}/releases/download/v{version}/ctm-macos-arm64"
+      sha256 "{arm64}"
+    else
+      url "https://github.com/{repo}/releases/download/v{version}/ctm-macos-x64"
+      sha256 "{x64}"
+    end
+  end
+
+  def install
+    if Hardware::CPU.arm?
+      bin.install "ctm-macos-arm64" => "ctm"
+    else
+      bin.install "ctm-macos-x64" => "ctm"
+    end
+  end
+
+  test do
+    system "\#{bin}/ctm", "--version"
+  end
+end
+"""
+
+          os.makedirs("/tmp/tap/Formula", exist_ok=True)
+          with open("/tmp/tap/Formula/ctm.rb", "w") as f:
+              f.write(formula)
+          EOF
+
+          cd /tmp/tap
+          git config user.email "github-actions@github.com"
+          git config user.name "GitHub Actions"
+          git add Formula/ctm.rb
+          git diff --staged --quiet || git commit -m "chore: bump ctm to ${VERSION}"
+          git push
