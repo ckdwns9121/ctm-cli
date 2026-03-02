@@ -8,8 +8,10 @@ import {
   deleteLocalBranch,
   deleteRemoteBranch,
   checkoutBranch,
+  findWorktreeForBranch,
+  removeWorktree,
 } from "../lib/git.js";
-import { printSuccess, printError } from "../lib/ui.js";
+import { printSuccess, printError, printWarn } from "../lib/ui.js";
 
 export async function cleanCommand(keyArg: string | undefined): Promise<void> {
   const config = ensureConfig();
@@ -59,6 +61,26 @@ export async function cleanCommand(keyArg: string | undefined): Promise<void> {
     } catch (err) {
       switchSpinner.fail(`Cannot switch to base branch: ${String(err)}`);
       process.exit(1);
+    }
+  }
+
+  // ── Worktree check: remove before deleting branch ────────────────────
+  const worktree = await findWorktreeForBranch(branchToClean);
+  if (worktree) {
+    printWarn(`Worktree found: ${chalk.cyan(worktree.path)}`);
+    const removeWt = await confirm({
+      message: `Remove worktree directory as well?`,
+      default: true,
+    });
+    if (removeWt) {
+      const wtSpinner = ora("Removing worktree…").start();
+      try {
+        await removeWorktree(worktree.path);
+        wtSpinner.succeed(`Worktree removed: ${chalk.cyan(worktree.path)}`);
+      } catch (err) {
+        wtSpinner.fail(`Could not remove worktree: ${String(err)}`);
+        printWarn("Continuing with branch deletion anyway.");
+      }
     }
   }
 

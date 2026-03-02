@@ -131,35 +131,55 @@ ctm done CGKR-1423   # 명시적 지정
 
 ---
 
-### `ctm clean [key]` — 브랜치 정리
+### `ctm clean [key]` — 브런치 정리
 
 ```bash
-ctm clean            # 현재 브랜치 삭제
-ctm clean CGKR-1423  # 해당 이슈 브랜치 삭제
+ctm clean            # 현재 브런치 삭제
+ctm clean CGKR-1423  # 해당 이슈 브런치 삭제
 ```
 
 로컬 브랜치를 삭제하고, 원격 브랜치도 함께 삭제할지 물어봅니다.  
-현재 브랜치를 삭제할 경우 base branch로 자동 전환됩니다.
+현재 브랜치를 삭제할 경우 base branch로 자동 전환됩니다.  
+worktree가 연결되어 있으면 함께 제거할지 자동으로 물어봅니다.
 
 ---
 
-## 일반적인 워크플로우
+### `ctm wt` — worktree 관리
 
 ```bash
-# 1. 오늘 내 이슈 확인
-ctm ls
+ctm wt                       # 현재 레포의 worktree 목록
+ctm wt rm CGKR-1423          # worktree 제거 (브런치 유지)
+ctm wt rm CGKR-1423 --branch # worktree + 브런치 함께 삭제
+ctm wt rm CGKR-1423 --force  # 변경사항이 있어도 강제 제거
+```
 
-# 2. 작업 시작 — 브랜치 자동 생성 + Jira 상태 "In Progress"
-ctm start CGKR-1423
+```
+  PATH                                        BRANCH              HEAD
+  /Users/dev/my-app  (main)                  main                abc1234
+  /Users/dev/my-app--feat-CGKR-1423          feat/CGKR-1423      def5678
+```
 
-# 3. 작업 중 현황 확인
-ctm st
+---
+## 일반적인 워크플로우
 
-# 4. 작업 완료 — push + PR 생성
-ctm done
+### 브런치 모드 (simpler)
 
-# 5. 머지 후 브랜치 정리
-ctm clean
+```bash
+ctm ls                  # 내 이슈 확인
+ctm start CGKR-1423     # 브런치 생성 + Jira 'In Progress'
+ctm st                  # 현재 상태 확인
+ctm done                # push + PR 생성
+ctm clean               # 머지 후 브런치 정리
+```
+
+### worktree 모드 (병렬 작업)
+
+```bash
+ctm ls                           # 내 이슈 확인
+ctm start CGKR-1423 --worktree   # 별도 디렉토리 생성, 브런치 전환 없음
+cd /path/to/my-app--feat-CGKR-1423
+ctm done                         # 해당 worktree에서 push + PR
+ctm wt rm CGKR-1423              # 머지 후 worktree 정리
 ```
 
 ---

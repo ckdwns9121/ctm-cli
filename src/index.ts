@@ -6,6 +6,7 @@ import { doneCommand } from "./commands/done.js";
 import { statusCommand } from "./commands/status.js";
 import { cleanCommand } from "./commands/clean.js";
 import { helpCommand } from "./commands/help.js";
+import { worktreeListCommand, worktreeRemoveCommand } from "./commands/worktree.js";
 
 const program = new Command();
 
@@ -31,6 +32,7 @@ program
 program
   .command("start [key]")
   .description("Create and checkout a branch for a Jira issue (e.g. CTM-123 or just 123)")
+  .option("-w, --worktree", "Create a linked worktree instead of switching branches")
   .action(startCommand);
 
 program
@@ -53,6 +55,23 @@ program
   .command("help [command]")
   .description("명령어 도움말 출력")
   .action(helpCommand);
+
+const wt = program
+  .command("worktree")
+  .alias("wt")
+  .description("Manage git worktrees created by ctm start --worktree");
+
+wt
+  .command("list", { isDefault: true })
+  .description("List all worktrees for the current repo")
+  .action(worktreeListCommand);
+
+wt
+  .command("rm [key]")
+  .description("Remove a worktree (optionally also delete the branch)")
+  .option("-b, --branch", "Also delete the git branch")
+  .option("-f, --force", "Force remove even with untracked changes")
+  .action(worktreeRemoveCommand);
 
 program.parseAsync().catch((err: unknown) => {
   if (err instanceof Error && err.name === "ExitPromptError") {

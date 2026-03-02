@@ -41,12 +41,15 @@ const COMMANDS: CommandDef[] = [
   },
   {
     name: "start",
-    usage: "ctm start [key]",
-    description: "Jira 이슈에 대한 브랜치를 생성하고 체크아웃합니다.\n  Jira 상태를 'In Progress'로 변경합니다.",
+    usage: "ctm start [key] [-w]",
+    description: "Jira 이슈에 대한 브런치를 생성하고 체크아웃합니다.\n  Jira 상태를 'In Progress'로 변경합니다.",
+    options: [
+      { flag: "-w, --worktree", desc: "별도 디렉토리(worktree)를 생성합니다 (브런치 전환 없이 병렬 작업 가능)" },
+    ],
     examples: [
       { cmd: "ctm start", comment: "이슈 목록에서 인터랙티브 선택" },
       { cmd: "ctm start CGKR-1423", comment: "특정 이슈 키로 바로 시작" },
-      { cmd: "ctm start 1423", comment: "숫자만 입력 (기본 프로젝트 자동 적용)" },
+      { cmd: "ctm start 1423 --worktree", comment: "worktree 모드로 발동" },
     ],
   },
   {
@@ -70,11 +73,28 @@ const COMMANDS: CommandDef[] = [
   {
     name: "clean",
     usage: "ctm clean [key]",
-    description: "Jira 이슈에 연결된 로컬 브랜치를 삭제합니다.\n  원격 브랜치도 함께 삭제할지 물어봅니다.",
+    description:
+      "Jira 이슈에 연결된 로컬 브랜치를 삭제합니다.\n  원격 브랜치도 함께 삭제할지 물어봅니다.\n  worktree가 있으면 함께 정리할지 물어봅니다.",
     examples: [
-      { cmd: "ctm clean", comment: "현재 브랜치 삭제" },
-      { cmd: "ctm clean CGKR-1423", comment: "특정 이슈 브랜치 삭제" },
+      { cmd: "ctm clean", comment: "현재 브런치 삭제" },
+      { cmd: "ctm clean CGKR-1423", comment: "특정 이슈 브런치 삭제" },
       { cmd: "ctm clean 1423", comment: "숫자만 입력 가능" },
+    ],
+  },
+  {
+    name: "worktree",
+    aliases: ["wt"],
+    usage: "ctm wt [rm <key>]",
+    description:
+      "worktree 목록을 확인하거나 제거합니다.\n  ctm start --worktree로 생성된 worktree를 관리합니다.",
+    options: [
+      { flag: "-b, --branch", desc: "worktree 제거 시 브런치도 함께 삭제" },
+      { flag: "-f, --force", desc: "변경사항이 있어도 강제 제거" },
+    ],
+    examples: [
+      { cmd: "ctm wt", comment: "worktree 목록" },
+      { cmd: "ctm wt rm CGKR-1423", comment: "worktree 제거 (브런치 유지)" },
+      { cmd: "ctm wt rm 1423 --branch", comment: "worktree + 브런치 함께 삭제" },
     ],
   },
 ];

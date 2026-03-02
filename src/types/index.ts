@@ -28,3 +28,10 @@ export interface CtmIssue {
     emailAddress: string;
   };
 }
+
+export interface WorktreeEntry {
+  path: string;    // absolute path to the worktree directory
+  branch: string;  // e.g. refs/heads/feat/CGKR-1423  (or "detached" if HEAD)
+  head: string;    // commit SHA
+  isMain: boolean; // true for the primary worktree
+}
