@@ -1,3 +1,4 @@
+import { createRequire } from "node:module";
 import { Command } from "commander";
 import { initCommand } from "./commands/init.js";
 import { issuesCommand } from "./commands/issues.js";
@@ -9,12 +10,15 @@ import { checkoutCommand } from "./commands/checkout.js";
 import { helpCommand } from "./commands/help.js";
 import { worktreeListCommand, worktreeRemoveCommand } from "./commands/worktree.js";
 
+const require = createRequire(import.meta.url);
+const { version } = require("../package.json");
+
 const program = new Command();
 
 program
   .name("ctm")
   .description("Colo Ticket Manager — Jira-driven branch management")
-  .version("0.1.0");
+  .version(version);
 
 program
   .command("init")
