@@ -1,5 +1,9 @@
+import { createRequire } from "node:module";
 import { Command } from "commander";
 import { initCommand } from "./commands/init.js";
+
+const require = createRequire(import.meta.url);
+const { version } = require("../package.json");
 import { issuesCommand } from "./commands/issues.js";
 import { startCommand } from "./commands/start.js";
 import { doneCommand } from "./commands/done.js";
@@ -14,7 +18,7 @@ const program = new Command();
 program
   .name("ctm")
   .description("Colo Ticket Manager — Jira-driven branch management")
-  .version("0.1.0");
+  .version(version);
 
 program
   .command("init")
