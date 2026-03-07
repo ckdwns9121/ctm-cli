@@ -53,6 +53,9 @@ export async function checkoutCommand(keyArg: string | undefined): Promise<void>
     if (shouldStash) {
       await stashChanges(`ctm: stash before ${target}`);
       printSuccess("Changes stashed.");
+    } else {
+      printWarn("Checkout aborted to preserve uncommitted changes.");
+      return;
     }
   }
 
