@@ -74,6 +74,17 @@ jobs:
             dist/release/ctm-macos-x64
           generate_release_notes: true
 
+      - name: Publish to npm
+        env:
+          NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: |
+          echo "//registry.npmjs.org/:_authToken=${NODE_AUTH_TOKEN}" > ~/.npmrc
+          VERSION_NUM="${{ steps.version.outputs.tag }}"
+          VERSION_NUM="${VERSION_NUM#v}"
+          npm version "$VERSION_NUM" --no-git-tag-version
+          npx tsup
+          npm publish --access public
+
       - name: Update Homebrew tap
         env:
           TOKEN: ${{ secrets.HOMEBREW_TAP_TOKEN }}
