@@ -1,9 +1,6 @@
 import { createRequire } from "node:module";
 import { Command } from "commander";
 import { initCommand } from "./commands/init.js";
-
-const require = createRequire(import.meta.url);
-const { version } = require("../package.json");
 import { issuesCommand } from "./commands/issues.js";
 import { startCommand } from "./commands/start.js";
 import { doneCommand } from "./commands/done.js";
@@ -12,6 +9,9 @@ import { cleanCommand } from "./commands/clean.js";
 import { checkoutCommand } from "./commands/checkout.js";
 import { helpCommand } from "./commands/help.js";
 import { worktreeListCommand, worktreeRemoveCommand } from "./commands/worktree.js";
+
+const require = createRequire(import.meta.url);
+const { version } = require("../package.json");
 
 const program = new Command();
 
