@@ -5,6 +5,7 @@ import { startCommand } from "./commands/start.js";
 import { doneCommand } from "./commands/done.js";
 import { statusCommand } from "./commands/status.js";
 import { cleanCommand } from "./commands/clean.js";
+import { checkoutCommand } from "./commands/checkout.js";
 import { helpCommand } from "./commands/help.js";
 import { worktreeListCommand, worktreeRemoveCommand } from "./commands/worktree.js";
 
@@ -45,6 +46,12 @@ program
   .alias("st")
   .description("Show current branch status and linked Jira issue")
   .action(statusCommand);
+
+program
+  .command("checkout [key]")
+  .alias("co")
+  .description("Checkout a branch by Jira issue key (e.g. CTM-123 or just 123)")
+  .action(checkoutCommand);
 
 program
   .command("clean [key]")
