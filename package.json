@@ -14,9 +14,18 @@
     "build": "tsup",
     "prepublishOnly": "tsup",
     "typecheck": "tsc --noEmit",
-    "format": "prettier --write src/"
+    "format": "prettier --write src/",
+    "changeset": "changeset",
+    "version-packages": "changeset version",
+    "release": "changeset publish"
   },
-  "keywords": ["jira", "git", "branch", "cli", "ticket"],
+  "keywords": [
+    "jira",
+    "git",
+    "branch",
+    "cli",
+    "ticket"
+  ],
   "author": "changjun",
   "license": "MIT",
   "repository": {
@@ -34,6 +43,8 @@
     "simple-git": "^3.31.1"
   },
   "devDependencies": {
+    "@changesets/changelog-github": "^0.6.0",
+    "@changesets/cli": "^2.30.0",
     "@types/node": "^22.0.0",
     "prettier": "^3.0.0",
     "tsup": "^8.0.0",
