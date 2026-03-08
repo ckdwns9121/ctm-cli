@@ -7,17 +7,23 @@ Jira 티켓 기반 Git 브랜치 관리 CLI.
 
 ## 설치
 
-### Homebrew (권장)
+### Homebrew (macOS)
 
 ```bash
 brew tap ckdwns9121/ctm
 brew install ctm
 ```
 
-### 업데이트
+업데이트:
 
 ```bash
 brew upgrade ctm
+```
+
+### npm (Windows / Linux / macOS)
+
+```bash
+npm install -g @devchangjun/ctm
 ```
 
 ---
@@ -89,6 +95,26 @@ Branch name  › fix/CGKR-1423   (수정 가능)
 ```
 
 현재 브랜치에 uncommitted 변경사항이 있으면 stash 여부를 물어봅니다.
+
+---
+
+### `ctm co [key]` — 브랜치 체크아웃
+
+```bash
+ctm co CGKR-1423     # 해당 티켓의 브랜치로 체크아웃
+ctm co 1423           # 숫자만 입력해도 OK
+```
+
+같은 티켓으로 여러 브랜치가 있으면 선택 리스트가 나옵니다.
+
+```
+? Multiple branches found for CGKR-1423:
+❯ feat/CGKR-1423
+  fix/CGKR-1423
+  refactor/CGKR-1423
+```
+
+uncommitted 변경사항이 있으면 stash 여부를 물어보고, stash를 거부하면 체크아웃을 중단합니다.
 
 ---
 
@@ -204,7 +230,8 @@ ctm wt rm CGKR-1423              # 머지 후 worktree 정리
 
 ## 요구사항
 
-- macOS (arm64 / x64)
+- macOS / Windows / Linux (npm 설치 시)
+- Node.js 20+ (npm 설치 시)
 - Git
 - GitHub CLI (`gh`) — `ctm done` 사용 시 필요
 
