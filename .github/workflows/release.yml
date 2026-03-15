@@ -51,10 +51,14 @@ jobs:
 
       - name: Build macOS binaries
         run: |
+          VERSION_NUM="${{ steps.version.outputs.tag }}"
+          VERSION_NUM="${VERSION_NUM#v}"
           mkdir -p dist/release
           bun build --compile --target=bun-macos-arm64 --minify src/index.ts \
+            --define __PKG_VERSION__="'${VERSION_NUM}'" \
             --outfile dist/release/ctm-macos-arm64
           bun build --compile --target=bun-macos-x64 --minify src/index.ts \
+            --define __PKG_VERSION__="'${VERSION_NUM}'" \
             --outfile dist/release/ctm-macos-x64
           chmod +x dist/release/ctm-macos-arm64
           chmod +x dist/release/ctm-macos-x64
