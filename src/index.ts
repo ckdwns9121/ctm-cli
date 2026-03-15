@@ -1,4 +1,3 @@
-import { createRequire } from "node:module";
 import { Command } from "commander";
 import { initCommand } from "./commands/init.js";
 import { issuesCommand } from "./commands/issues.js";
@@ -10,8 +9,8 @@ import { checkoutCommand } from "./commands/checkout.js";
 import { helpCommand } from "./commands/help.js";
 import { worktreeListCommand, worktreeRemoveCommand } from "./commands/worktree.js";
 
-const require = createRequire(import.meta.url);
-const { version } = require("../package.json");
+declare const __PKG_VERSION__: string;
+const version = typeof __PKG_VERSION__ !== "undefined" ? __PKG_VERSION__ : "0.0.0-dev";
 
 const program = new Command();
 
