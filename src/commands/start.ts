@@ -80,14 +80,22 @@ export async function startCommand(
   // ── Branch prefix selection ────────────────────────────────────────────
   const defaultPrefix = smartBranchPrefix(issue.issuetype.name, config.branchPrefix);
 
-  const prefix = await select<string>({
+  const CUSTOM_VALUE = "__custom__";
+  const selected = await select<string>({
     message: "Branch type",
-    choices: BRANCH_PREFIXES.map((p) => ({
-      value: p,
-      name: p,
-    })),
+    choices: [
+      ...BRANCH_PREFIXES.map((p) => ({ value: p, name: p })),
+      { value: CUSTOM_VALUE, name: "custom (직접 입력)" },
+    ],
     default: defaultPrefix,
   });
+
+  const prefix = selected === CUSTOM_VALUE
+    ? await input({
+        message: "Custom branch prefix",
+        validate: (v) => (v ? true : "Required"),
+      })
+    : selected;
 
   const suggestedBranch = buildBranchName(prefix, issue.key);
   const branchName = await input({
