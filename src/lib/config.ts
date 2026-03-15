@@ -76,7 +76,7 @@ export function slugify(text: string): string {
 }
 
 /** Branch prefix options */
-export const BRANCH_PREFIXES = ["feat", "fix", "refactor", "qa", "chore"] as const;
+export const BRANCH_PREFIXES = ["feat", "fix", "refactor", "qa", "chore", "docs", "ktlo", "test"] as const;
 export type BranchPrefix = (typeof BRANCH_PREFIXES)[number];
 
 /** Build branch name: "feat/CTM-123" */
@@ -93,7 +93,10 @@ export function smartBranchPrefix(issueType: string, defaultPrefix: string): Bra
   if (type.includes("story") || type.includes("feature") || type.includes("improvement"))
     return "feat";
   if (type.includes("refactor")) return "refactor";
-  if (type.includes("qa") || type.includes("test")) return "qa";
+  if (type.includes("qa")) return "qa";
+  if (type.includes("test")) return "test";
+  if (type.includes("doc")) return "docs";
+  if (type.includes("ktlo") || type.includes("maintenance")) return "ktlo";
   if (type.includes("task") || type.includes("epic") || type.includes("chore")) return "chore";
   const match = BRANCH_PREFIXES.find((p) => p === defaultPrefix);
   return match ?? "feat";
